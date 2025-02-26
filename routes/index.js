@@ -1,9 +1,9 @@
-var express = require('express');
-var router = express.Router();
+// routes/exampleRoute.js
+const express = require('express');
+const router = express.Router();
 
-/* GET home page. */
-router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
+router.get('/', (req, res) => {
+  res.json({ foo: 'bar' }); // 자동으로 { status: 'success', data: { foo: 'bar' } }로 변환됨
 });
 
 module.exports = router;
