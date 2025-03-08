@@ -1,6 +1,7 @@
 // routes/exampleRoute.js
 const express = require('express');
 const jwtUtils = require("../middlewares/jwtUtils");
+const {createUser, getAllUsers} = require("../infra/database")
 const {log} = require("debug");
 const router = express.Router();
 
@@ -9,29 +10,39 @@ router.post('/', (req, res) => {
     res.json({ accessToken: token.accessToken, refreshToken: token.refreshToken });
 });
 
-router.post('/login', (req, res) => {
-    let userId = req.body.userId;
+router.post('/login', async (req, res) => {
+    let nickName = req.body.nickName;
     let email = req.body.email;
-    // 유효성 체크
+
+    const userId = await createUser(nickName, email);
+    console.log("새로운 사용자 ID:", userId);
+
+    if (userId < 0) {
+        return res.status(401).json({ message: 'Invalid Login Info' });
+    }
+
     // DB 등록
     let token = jwtUtils.generateTokens(userId);
-    res.json({ accessToken: token.accessToken, refreshToken: token.refreshToken });
+    res.json({accessToken: token.accessToken, refreshToken: token.refreshToken});
 });
 
 router.post('/refresh', (req, res) => {
-    // refresh token 검증
     let refreshToken = req.body.refreshToken;
-    // TODO: 만료 되었을 경우 응답 체크
-    if (refreshToken == null || jwtUtils.verifyToken(refreshToken) == null) {
-        log(jwtUtils.verifyToken("REFRESH_TOKEN", refreshToken));
-        res.sendStatus(401);
-        res.json({ message: 'Invalid refresh token' });
-        return;
+
+    // refreshToken 검증
+    if (!refreshToken) {
+        return res.status(401).json({ message: 'Refresh token is missing' });
     }
-    let userId = jwtUtils.verifyToken(refreshToken).userId;
+
+    let decodedToken = jwtUtils.verifyToken("REFRESH_TOKEN", refreshToken);
+
+    if (!decodedToken || decodedToken.userId < 0) {
+        return res.status(401).json({ message: 'Invalid refresh token' });
+    }
+
     // access token 재발급
-    let token = jwtUtils.generateTokens(userId);
-    res.json({ accessToken : token.accessToken, refreshToken: token.refreshToken });
+    let token = jwtUtils.generateTokens(decodedToken.userId);
+    res.json({ accessToken: token.accessToken, refreshToken: token.refreshToken });
 });
 
 module.exports = router;
