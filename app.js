@@ -8,6 +8,7 @@ const multer = require('multer');
 const form_data = multer();
 const responseAdvisor = require('./middlewares/responseAdvisor');
 const jwtUtils = require('./middlewares/jwtUtils');
+require('./infra/database');
 
 let app = express();
 app.use(express.json());

@@ -1,7 +1,7 @@
 // routes/exampleRoute.js
 const express = require('express');
 const jwtUtils = require("../middlewares/jwtUtils");
-const {createUser, getAllUsers} = require("../infra/database")
+const {createUser, getUserByEmail} = require("../infra/model/users")
 const {log} = require("debug");
 const router = express.Router();
 
@@ -10,20 +10,29 @@ router.post('/', (req, res) => {
     res.json({ accessToken: token.accessToken, refreshToken: token.refreshToken });
 });
 
-router.post('/login', async (req, res) => {
+router.get('/login', async (req, res) => {
+    let email = req.body.email;
+
+    const user = await getUserByEmail(email);
+    if (!user) {
+        return res.status(401).json({ message: 'Invalid Login Info' });
+    }
+
+    let token = jwtUtils.generateTokens(user._id);
+    res.json({accessToken: token.accessToken, refreshToken: token.refreshToken});
+});
+
+router.post('/signup', async (req, res) => {
     let nickName = req.body.nickName;
     let email = req.body.email;
 
-    const userId = await createUser(nickName, email);
+    const userId = await createUser(nickName, email)._id;
     console.log("새로운 사용자 ID:", userId);
 
     if (userId < 0) {
         return res.status(401).json({ message: 'Invalid Login Info' });
     }
-
-    // DB 등록
-    let token = jwtUtils.generateTokens(userId);
-    res.json({accessToken: token.accessToken, refreshToken: token.refreshToken});
+    return res.status(200).json({ message: 'Success' });
 });
 
 router.post('/refresh', (req, res) => {
