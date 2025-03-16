@@ -9,6 +9,7 @@ const form_data = multer();
 const responseAdvisor = require('./middlewares/responseAdvisor');
 const jwtUtils = require('./middlewares/jwtUtils');
 require('./infra/database');
+// require('./util/init');
 
 let app = express();
 app.use(express.json());
@@ -24,9 +25,11 @@ server.listen(3000);
 
 let indexRouter = require('./routes/index');
 let authRouter = require('./routes/auth');
+let medicineRouter = require('./routes/medicine');
 
 app.use('/auth', authRouter);
 app.use('/', indexRouter);
+app.use('/medicine', medicineRouter);
 
 
 

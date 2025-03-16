@@ -12,13 +12,6 @@ const UserSchema = new Schema({
 
 const User = model('User', UserSchema);
 
-// ✅ MongoDB 연결
-mongoose.connect(url, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => console.log('MongoDB 연결 완료!'))
-    .catch(err => console.error('MongoDB 연결 실패:', err));
-
 // ✅ CRUD 함수 정의
 const createUser = async (name, email) => {
     try {

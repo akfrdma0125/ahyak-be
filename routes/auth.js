@@ -10,14 +10,16 @@ router.post('/', (req, res) => {
     res.json({ accessToken: token.accessToken, refreshToken: token.refreshToken });
 });
 
-router.get('/login', async (req, res) => {
+router.post('/login', async (req, res) => {
     let email = req.body.email;
 
     const user = await getUserByEmail(email);
+    console.log("사용자 정보:", user);
     if (!user) {
         return res.status(401).json({ message: 'Invalid Login Info' });
     }
 
+    console.log("사용자 ID:", user._id);
     let token = jwtUtils.generateTokens(user._id);
     res.json({accessToken: token.accessToken, refreshToken: token.refreshToken});
 });
