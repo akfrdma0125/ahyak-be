@@ -9,8 +9,9 @@ router.post("/", async (req, res) => {
 
         console.log("userId", userId);
 
-        if (userId === undefined) {
-            res.status(401).json({ message: "Unauthorized" });
+        if (!date || !discomforts) {
+            res.status(400).json({ message: "Bad Request" });
+            return;
         }
 
         const newStatus = await createDailyStatus(userId, date, discomforts, additionalInfo);
@@ -27,10 +28,12 @@ router.get("/", async (req, res) => {
         const userId = req.user_id;
 
         const status = await getDailyStatusByDate(userId, date);
-        if (status === null) {
-            res.status(404).json({ message: "NOT FOUND" });
-            return
+
+        if (!status) {
+            res.status(404).json({ message: "Not Found" });
+            return;
         }
+
         res.json({ status: "success", data: status });
     } catch (err) {
         console.error("일일 상태 조회 오류:", err);

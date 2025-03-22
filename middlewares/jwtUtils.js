@@ -7,7 +7,7 @@ const REFRESH_TOKEN_SECRET = process.env.REFRESH_SECRET_KEY
 // 로그인 시 실행 (사용자 인증 후)
 function generateTokens(userId) {
     log(ACCESS_TOKEN_SECRET)
-    const accessToken = jwt.sign({ userId }, ACCESS_TOKEN_SECRET, { expiresIn: '30m' });
+    const accessToken = jwt.sign({ userId }, ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
     const refreshToken = jwt.sign({ userId }, REFRESH_TOKEN_SECRET, { expiresIn: '14d' });
 
     return { accessToken, refreshToken };
