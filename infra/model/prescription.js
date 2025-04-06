@@ -35,4 +35,4 @@ const createPrescription = async (userId, name, hospital, startDate, endDate) =>
 };
 
 
-module.exports = { createPrescription };
+module.exports = { createPrescription, Prescription };
