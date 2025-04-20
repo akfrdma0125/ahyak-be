@@ -128,5 +128,46 @@ const getUserMedicineByDate = async (user_id, date) => {
     return Object.values(grouped); // 배열 형태로 리턴
 }
 
-module.exports = {createMedicineWithLogs, getUserMedicineByDate};
+// soft delete: prescription_id가 삭제되면 userMedicine도 삭제
+const deletePrescription = async (prescription_id) => {
+    try {
+        // 1. 처방 비활성화
+        await Prescription.findByIdAndUpdate(prescription_id, {
+            is_Active: false
+        });
+
+        // 2. 연결된 UserMedicine 비활성화
+        await UserMedicine.updateMany(
+            { prescription_id: prescription_id },
+            { isActive: false }
+        );
+
+        // 3. 연결된 복용 기록(UserMedicineTakeLog)도 비활성화
+        await UserMedicineLog.updateMany(
+            { prescription_id: prescription_id },
+            { isActive: false }
+        );
+    } catch (err) {
+        console.error('UserMedicine 삭제 실패:', err);
+    }
+};
+
+const deleteUserMedicine = async (userMedicineId) => {
+    try {
+        // 1. UserMedicine 비활성화
+        await UserMedicine.findByIdAndUpdate(userMedicineId, {
+            isActive: false
+        });
+
+        // 2. 연결된 복용 기록(UserMedicineTakeLog)도 비활성화
+        await UserMedicineLog.updateMany(
+            { userMedicine_id: userMedicineId },
+            { isActive: false }
+        );
+    } catch (err) {
+        console.error('UserMedicine 삭제 실패:', err);
+    }
+}
+
+module.exports = {createMedicineWithLogs, getUserMedicineByDate, deletePrescription, deleteUserMedicine};
 

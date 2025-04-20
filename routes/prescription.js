@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { createPrescription } = require("../infra/model/prescription");
-const { createMedicineWithLogs, getUserMedicineByDate } = require("../infra/model/medication");
+const { createMedicineWithLogs, getUserMedicineByDate, deletePrescription, deleteUserMedicine } = require("../infra/model/medication");
 
 router.post("/", async (req, res) => {
     try {
@@ -68,6 +68,42 @@ router.get("/medicine", async (req, res) => {
         res.json({ medicines });
     } catch (err) {
         console.error("약 검색 오류:", err);
+        res.status(500).json({ message: "서버 오류" });
+    }
+});
+
+router.delete("/", async (req, res) => {
+    try {
+        const prescriptionId = req.query.prescription_id;
+        const userId = req.user_id;
+
+        if (!prescriptionId) {
+            return res.status(400).json({ message: "처방전 ID가 필요합니다." });
+        }
+
+        await deletePrescription(prescriptionId);
+
+        res.json({ message: "처방전이 삭제되었습니다." });
+    } catch (err) {
+        console.error("처방전 삭제 오류:", err);
+        res.status(500).json({ message: "서버 오류" });
+    }
+});
+
+router.delete("/medicine", async (req, res) => {
+    try {
+        const userMedicineId = req.query.userMedicine_id;
+
+        if (!userMedicineId) {
+            return res.status(400).json({ message: "UserMedicine ID가 필요합니다." });
+        }
+
+        // UserMedicine 삭제 로직을 여기에 추가합니다.
+        await deleteUserMedicine(userMedicineId);
+
+        res.json({ message: "UserMedicine이 삭제되었습니다." });
+    } catch (err) {
+        console.error("UserMedicine 삭제 오류:", err);
         res.status(500).json({ message: "서버 오류" });
     }
 });
