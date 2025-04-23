@@ -40,9 +40,18 @@ const getUserByEmail = async (email) => {
     }
 };
 
-const deleteUser = async (email) => {
+
+const getUserById = async (userId) => {
     try {
-        return await User.findOneAndDelete({ email: email });
+        return await User.findById(userId);
+    } catch (err) {
+        console.error('User 조회 실패:', err);
+    }
+}
+
+const deleteUser = async (id) => {
+    try {
+        return await User.findByIdAndDelete(id);
     } catch (err) {
         console.error('User 삭제 실패:', err);
     }
@@ -60,6 +69,7 @@ const deactivateUser = async (email) => {
 module.exports = {
     createUser,
     getAllUsers,
+    getUserById,
     deleteUser,
     deactivateUser,
     getUserByEmail

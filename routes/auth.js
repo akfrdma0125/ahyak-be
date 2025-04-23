@@ -1,7 +1,7 @@
 // routes/exampleRoute.js
 const express = require('express');
 const jwtUtils = require("../middlewares/jwtUtils");
-const {createUser, getUserByEmail} = require("../infra/model/users")
+const {createUser, getUserById, deleteUser} = require("../infra/model/users")
 const {log} = require("debug");
 const router = express.Router();
 
@@ -54,6 +54,24 @@ router.post('/refresh', (req, res) => {
     // access token 재발급
     let token = jwtUtils.generateTokens(decodedToken.userId);
     res.json({ accessToken: token.accessToken, refreshToken: token.refreshToken });
+});
+
+// 회원탈퇴
+router.delete("/withdraw", async (req, res) => {
+    // JWT 토큰에서 사용자 ID 추출
+    const userId = req.user_id;
+
+    // 사용자 ID가 유효한지 확인
+    let userInfo = await getUserById(userId);
+    if (!userInfo) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+    if (userInfo.isActive === false) {
+        return res.status(400).json({ message: 'User already deactivated' });
+    }
+    await deleteUser(userId); // 실제 삭제 함수 호출
+
+    res.status(200).json({ message: 'User deleted successfully' });
 });
 
 module.exports = router;

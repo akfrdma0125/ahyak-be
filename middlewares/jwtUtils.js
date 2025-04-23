@@ -24,7 +24,7 @@ function verifyToken(type, token) {
 
 // 헤더 Authorization 에서 accessToken 파싱
 function authenticateToken(req, res, next) {
-    if (req.path.startsWith('/auth')) {
+    if (req.path !== "/auth/withdraw" && req.path.startsWith('/auth')) {
         return next(); // 로그인, 회원가입은 JWT 검사 안 함
     }
     const token = req.header('Authorization')?.split(' ')[1]; // Bearer {token}
