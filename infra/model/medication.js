@@ -102,31 +102,39 @@ const getUserMedicineByDate = async (user_id, date) => {
     // 2. 처방별로 그룹핑
     const grouped = {};
 
-    for (const log of logs) {
-        const prescription = log.prescription_id;
-        if (!prescription) continue;
+       for (const log of logs) {
+           const prescription = log.prescription_id;
+           if (!prescription) continue;
 
-        const key = prescription._id.toString();
-        if (!grouped[key]) {
-            grouped[key] = {
-                prescriptionId: prescription._id,
-                symptomName: prescription.name, // 증상 이름
-                startDate: prescription.start_date,
-                logs: []
-            };
-        }
+           const key = prescription._id.toString();
+           if (!grouped[key]) {
+               grouped[key] = {
+                   prescriptionId: prescription._id,
+                   symptomName: prescription.name, // 증상 이름
+                   startDate: prescription.start_date,
+                   medicines: {} // 약 정보를 그룹화할 객체 추가
+               };
+           }
 
-        grouped[key].logs.push({
-            medicineName: log.medicine_name || log.medicine_id?.name,
-            dose: log.dose,
-            unit: log.unit,
-            time: log.time,
-            taken: log.taken
-        });
-    }
-
-    return Object.values(grouped); // 배열 형태로 리턴
+           const medicineKey = log.userMedicine_id.toString();
+           if (!grouped[key].medicines[medicineKey]) {
+               grouped[key].medicines[medicineKey] = {
+                   medicineName: log.medicine_name || log.medicine_id?.name,
+                   dose: log.dose,
+                   unit: log.unit,
+                   logs: []
+               };
+           }
+           grouped[key].medicines[medicineKey].logs.push({
+               id : log._id,
+               time: log.time,
+               taken: log.taken
+           });
+       }
+    return Object.values(grouped);
 }
+
+
 
 // soft delete: prescription_id가 삭제되면 userMedicine도 삭제
 const deletePrescription = async (prescription_id) => {
@@ -169,5 +177,24 @@ const deleteUserMedicine = async (userMedicineId) => {
     }
 }
 
-module.exports = {createMedicineWithLogs, getUserMedicineByDate, deletePrescription, deleteUserMedicine};
+const updateTakenStatus = async (userId, logId, taken) => {
+    try{
+        // userId로 해당 userMedicineId를 보유하고 있는지 찾는다.
+        const medicineLog = await UserMedicineLog.findOne({ user_id: userId, _id: logId });
+        if (!medicineLog) {
+            throw new Error("해당 기록이 존재하지 않습니다.");
+        }
+
+        // 복용 여부 업데이트
+        await UserMedicineLog.findByIdAndUpdate(
+            logId,
+            { taken: taken }
+        );
+    } catch (err) {
+        console.log("복용 상태 업데이트 오류:", err);
+        throw new Error("복용 상태 업데이트에 실패했습니다.");
+    }
+}
+
+module.exports = {createMedicineWithLogs, getUserMedicineByDate, deletePrescription, deleteUserMedicine, updateTakenStatus};
 

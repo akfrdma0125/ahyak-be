@@ -28,12 +28,14 @@ let authRouter = require('./routes/auth');
 let medicineRouter = require('./routes/medicine');
 let dailyStatusRouter = require('./routes/dailyStatus');
 let prescriptionRouter = require('./routes/prescription');
+let medicationLogsRouter = require('./routes/medicationLogs');
 
 app.use('/auth', authRouter);
 app.use('/', indexRouter);
 app.use('/medicine', medicineRouter);
 app.use('/dailyStatus', dailyStatusRouter);
 app.use('/prescription', prescriptionRouter);
+app.use('/medicationLogs', medicationLogsRouter);
 
 
 
