@@ -1,7 +1,7 @@
 // routes/exampleRoute.js
 const express = require('express');
 const jwtUtils = require("../middlewares/jwtUtils");
-const {createUser, getUserById, deleteUser} = require("../infra/model/users")
+const {createUser, getUserById, deleteUser, getUserByEmail} = require("../infra/model/users")
 const {log} = require("debug");
 const router = express.Router();
 
