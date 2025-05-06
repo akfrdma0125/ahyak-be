@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const {updateTakenStatus} = require("../infra/model/medication");
+const {getMedicationStats, getDailyStats} = require("../infra/model/prescription");
 router.patch("/", async (req, res) => {
     try {
         // user 정보 가져오기
@@ -11,6 +12,16 @@ router.patch("/", async (req, res) => {
         });
     } catch (err) {
         return res.status(400).json({message: err.message});
+    }
+});
+
+router.get("/stats", async (req, res) => {
+    try {
+        const userId = req.user_id;
+        const stats = await getDailyStats(userId, req.query.date);
+        return res.status(200).json({ message: "복용 통계 조회 성공", data: stats });
+    } catch (err) {
+        return res.status(400).json({ message: err.message });
     }
 });
 

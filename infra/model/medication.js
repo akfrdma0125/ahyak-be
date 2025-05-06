@@ -196,5 +196,6 @@ const updateTakenStatus = async (userId, logId, taken) => {
     }
 }
 
-module.exports = {createMedicineWithLogs, getUserMedicineByDate, deletePrescription, deleteUserMedicine, updateTakenStatus};
+
+module.exports = {UserMedicineLog, createMedicineWithLogs, getUserMedicineByDate, deletePrescription, deleteUserMedicine, updateTakenStatus};
 

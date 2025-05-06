@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createPrescription } = require("../infra/model/prescription");
+const { createPrescription, getPrescription } = require("../infra/model/prescription");
 const { createMedicineWithLogs, getUserMedicineByDate, deletePrescription, deleteUserMedicine } = require("../infra/model/medication");
 
 router.post("/", async (req, res) => {
@@ -14,10 +14,69 @@ router.post("/", async (req, res) => {
             return;
         }
 
+        // 유효성 로직: 시작일은 종료일보다 같거나 이전이어야 합니다.
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        if (start > end) {
+            return res.status(400).json({ message: "시작일은 종료일보다 이전이어야 합니다." });
+        }
+
         const prescription = await createPrescription(userId, name, hospital, startDate, endDate);
         res.json({ prescription });
     } catch (err) {
         console.error("처방 생성 오류:", err);
+        res.status(500).json({ message: "서버 오류" });
+    }
+});
+
+// 처방 기록 조회
+router.get("/", async (req, res) => {
+    try {
+        const userId = req.user_id;
+        const prescriptionId = req.query.prescription_id;
+
+        if (!prescriptionId) {
+            return res.status(400).json({ message: "처방전 ID가 필요합니다." });
+        }
+
+        const prescription = await getPrescription(userId, prescriptionId);
+        if (!prescription) {
+            return res.status(404).json({ message: "처방전이 존재하지 않습니다." });
+        }
+
+        res.json({ prescription });
+    } catch (err) {
+        console.error("처방전 조회 오류:", err);
+        res.status(500).json({ message: "서버 오류" });
+    }
+});
+
+// 처방 기록 수정
+// requestBody: { prescription_id, name, hospital, start_date, end_date }
+router.patch("/", async (req, res) => {
+    try {
+        const userId = req.user_id;
+
+        const { prescription_id, name, hospital, start_date, end_date } = req.body;
+        if (!prescription_id || !name || !hospital || !start_date || !end_date) {
+            return res.status(400).json({ message: "처방전 ID와 수정할 데이터를 모두 제공해야 합니다." });
+        }
+
+        // 시작일/종료일이 변경되었는지 확인
+        const prePrescription = await getPrescription(userId, prescription_id);
+        if (!prePrescription) {
+            return res.status(404).json({ message: "처방전이 존재하지 않습니다." });
+        }
+
+        const start = new Date(start_date);
+        const end = new Date(end_date);
+
+        // 처방전 수정 로직을 여기에 추가합니다.
+        // 예를 들어, 처방전의 이름이나 병원 이름을 수정할 수 있습니다.
+
+        res.json({ message: "처방전이 수정되었습니다." });
+    } catch (err) {
+        console.error("처방전 수정 오류:", err);
         res.status(500).json({ message: "서버 오류" });
     }
 });
