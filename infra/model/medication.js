@@ -277,6 +277,92 @@ const getMonthlyMedicineStats = async (userId, month, year) => {
     }
 };
 
+async function updateUserMedicine(userMedicineId, updatedData, actionType) {
+    const existing = await UserMedicine.findById(userMedicineId);
+    const prescriptionId = existing.prescription_id;
 
-module.exports = {UserMedicineLog, createMedicineWithLogs, getUserMedicineByDate, deletePrescription, deleteUserMedicine, updateTakenStatus, getMonthlyMedicineStats, UserMedicine};
+    // 1. 기존 복용 기록
+    const oldLogs = await UserMedicineLog.find({
+        userMedicine_id: userMedicineId
+    });
+
+    // 2. 삭제 전략에 따른 처리
+    switch (actionType) {
+        case 0:
+            // 모든 기록 삭제
+            await UserMedicineLog.deleteMany({ userMedicine_id: userMedicineId });
+            break;
+
+        case 1:
+            // 미복용 기록만 삭제
+            await UserMedicineLog.deleteMany({
+                userMedicine_id: userMedicineId,
+                taken: false
+            });
+            break;
+
+        case 2:
+            // 유지, 중복되지 않는 부분만 생성
+            // → 밑에서 새 로그 만들 때 고려
+            break;
+    }
+
+    // 3. UserMedicine 수정
+    const updatedMedicine = await UserMedicine.findByIdAndUpdate(
+        userMedicineId,
+        updatedData,
+        { new: true }
+    );
+
+    // 4. 증상의 기간 정보
+    const prescription = await Prescription.findById(prescriptionId);
+    const endDate = prescription.end_date;
+    const startDate = updatedMedicine.start_date;
+    const frequency = updatedMedicine.frequency;
+    const times = updatedMedicine.times;
+
+    if (frequency === -1) return updatedMedicine;
+
+    const newLogs = [];
+
+    let date = new Date(startDate);
+
+    while (date <= endDate) {
+        for (const time of times) {
+            // 기존 기록 유지 옵션이면 중복 제외
+            const exists = await UserMedicineLog.findOne({
+                userMedicine_id: userMedicineId,
+                take_date: date,
+                time,
+            });
+
+            if (actionType === 'keep_existing' && exists) continue;
+
+            newLogs.push({
+                user_id: updatedMedicine.user_id,
+                medicine_id: updatedMedicine.medicine_id,
+                prescription_id: updatedMedicine.prescription_id,
+                userMedicine_id: updatedMedicine._id,
+                medicine_name: updatedMedicine.medicine_name,
+                dose: updatedMedicine.dose,
+                unit: updatedMedicine.unit,
+                take_date: new Date(date),
+                time,
+                taken: false,
+            });
+        }
+
+        date.setDate(date.getDate() + frequency);
+    }
+
+    if (newLogs.length > 0) {
+        await UserMedicineLog.insertMany(newLogs);
+    }
+
+    return updatedMedicine;
+}
+
+
+module.exports = {UserMedicineLog, createMedicineWithLogs, getUserMedicineByDate,
+    deletePrescription, deleteUserMedicine, updateTakenStatus, getMonthlyMedicineStats, UserMedicine, updateUserMedicine};
 

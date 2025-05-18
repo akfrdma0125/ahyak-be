@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const {updateTakenStatus, getMonthlyMedicineStats} = require("../infra/model/medication");
+const {updateTakenStatus, getMonthlyMedicineStats, updateUserMedicine} = require("../infra/model/medication");
 const {getMedicationStats, getDailyStats} = require("../infra/model/prescription");
 router.patch("/", async (req, res) => {
     try {
@@ -34,6 +34,32 @@ router.get("/monthly", async (req, res) => {
         // 월별 통계 조회
         const monthlyStats = await getMonthlyMedicineStats(userId, month, year);
         return res.status(200).json({ message: "월별 통계 조회 성공", data: monthlyStats });
+    } catch (err) {
+        return res.status(400).json({ message: err.message });
+    }
+});
+
+router.put("/", async (req, res) => {
+    try {
+        const userMedicineId = req.params.id;
+        const {
+            medicine_name,
+            dose,
+            unit,
+            frequency,
+            times,
+            actionType,
+        } = req.body;
+
+        // 약 복용 여부 업데이트
+        const updatedMedicine = await updateUserMedicine(userMedicineId, {
+            medicine_name,
+            dose,
+            unit,
+            frequency,
+            times,
+        }, actionType);
+        return res.status(200).json({ message: "복용 여부 업데이트 성공" });
     } catch (err) {
         return res.status(400).json({ message: err.message });
     }

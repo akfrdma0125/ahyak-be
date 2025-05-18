@@ -13,8 +13,6 @@ const PrescriptionSchema = new Schema({
 });
 
 const Prescription = model("Prescription", PrescriptionSchema);
-module.exports = Prescription;
-
 
 // create
 const createPrescription = async (userId, name, hospital, startDate, endDate) => {
@@ -82,7 +80,6 @@ const updatePrescription = async (userId, prescriptionId, updates) => {
     }
 };
 
-module.exports = { updatePrescription };
 const getDailyStats = async (userId, date) => {
     try {
         const startDate = new Date(date);
