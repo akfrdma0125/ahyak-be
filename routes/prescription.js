@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createPrescription, getPrescription, updatePrescription } = require("../infra/model/prescription");
+const { createPrescription, getPrescription, updatePrescription, findPrescriptionById } = require("../infra/model/prescription");
 const { createMedicineWithLogs, getUserMedicineByDate, deletePrescription, deleteUserMedicine } = require("../infra/model/medication");
 
 router.post("/", async (req, res) => {
@@ -99,6 +99,11 @@ router.post("/medicine", async (req, res) => {
             return;
         }
 
+
+        // 2. 증상 테이블에서 end_date 가져오기
+        const symptom = await findPrescriptionById(prescription_id);
+        const endDate = symptom.end_date;
+
         const medicine = await createMedicineWithLogs({
             user_id,
             medicine_id,
@@ -109,7 +114,7 @@ router.post("/medicine", async (req, res) => {
             frequency,
             times,
             start_date
-        });
+        }, endDate);
         // res.json({ medicine });
         return res.status(200).json({ message: "약 생성 성공" });
     } catch (err) {

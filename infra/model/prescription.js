@@ -125,5 +125,30 @@ const getDailyStats = async (userId, date) => {
     }
 }
 
+const findById = async (id) => {
+    try {
+        const result = await Prescription.findById(id, { withUserMedicines: false });
+        if (!result) {
+            throw new Error("Prescription not found.");
+        }
+        return result;
+    } catch (err) {
+        console.error("Error in findById:", err);
+        throw err;
+    }
+};
+const findByIdAndUpdate = async (id, updates, options = { new: true }) => {
+    try {
+        const result = await Prescription.findByIdAndUpdate(id, updates, options);
+        if (!result) {
+            throw new Error("Prescription not found or update failed.");
+        }
+        return result;
+    } catch (err) {
+        console.error("Error in findByIdAndUpdate:", err);
+        throw err;
+    }
+};
 
-module.exports = { createPrescription, Prescription, getPrescription, getDailyStats, updatePrescription };
+module.exports = { createPrescription, Prescription, getPrescription, getDailyStats, updatePrescription
+, findByIdAndUpdate, findPrescriptionById: findById};

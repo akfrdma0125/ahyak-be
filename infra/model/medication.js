@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema, model } = mongoose;
 
-const {Prescription} = require('./prescription');
+const {findPrescriptionById, findByIdAndUpdate} = require('./prescription');
 const {Medicine} = require('./medicine');
 
 
@@ -39,7 +39,7 @@ const UserMedicineLogSchema = new Schema({
 
 const UserMedicineLog = model('UserMedicineLog', UserMedicineLogSchema);
 
-const createMedicineWithLogs = async (userMedicineData) => {
+const createMedicineWithLogs = async (userMedicineData, endDate) => {
     const { user_id, medicine_id, prescription_id, medicine_name, dose, unit, frequency, times, start_date } = userMedicineData;
 
     // 1. UserMedicine 저장
@@ -48,10 +48,6 @@ const createMedicineWithLogs = async (userMedicineData) => {
     console.log("UserMedicine Data:", userMedicineData);
 
     await newUserMedicine.save();
-
-    // 2. 증상 테이블에서 end_date 가져오기
-    const symptom = await Prescription.findById(prescription_id);
-    const endDate = symptom.end_date;
 
     if (frequency === -1) return newUserMedicine;
 
@@ -140,7 +136,7 @@ const getUserMedicineByDate = async (user_id, date) => {
 const deletePrescription = async (prescription_id) => {
     try {
         // 1. 처방 비활성화
-        await Prescription.findByIdAndUpdate(prescription_id, {
+        await findByIdAndUpdate(prescription_id, {
             is_Active: false
         });
 
@@ -277,9 +273,8 @@ const getMonthlyMedicineStats = async (userId, month, year) => {
     }
 };
 
-async function updateUserMedicine(userMedicineId, updatedData, actionType) {
-    const existing = await UserMedicine.findById(userMedicineId);
-    const prescriptionId = existing.prescription_id;
+async function updateUserMedicine(userMedicineId, updatedData, actionType, prescription) {
+
 
     // 1. 기존 복용 기록
     const oldLogs = await UserMedicineLog.find({
@@ -314,8 +309,6 @@ async function updateUserMedicine(userMedicineId, updatedData, actionType) {
         { new: true }
     );
 
-    // 4. 증상의 기간 정보
-    const prescription = await Prescription.findById(prescriptionId);
     const endDate = prescription.end_date;
     const startDate = updatedMedicine.start_date;
     const frequency = updatedMedicine.frequency;
