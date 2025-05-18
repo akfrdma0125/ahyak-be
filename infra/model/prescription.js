@@ -44,7 +44,45 @@ const getPrescription = async(userId, prescriptionId) => {
     }
 }
 
+const updatePrescription = async (userId, prescriptionId, updates) => {
+    try {
+        const { name, hospital, start_date, end_date } = updates;
 
+        // Find the existing prescription
+        const prescription = await Prescription.findOne({ user_id: userId, _id: prescriptionId });
+        if (!prescription) {
+            throw new Error("Prescription not found.");
+        }
+
+        // Check if dates have changed
+        const oldStartDate = prescription.start_date.getTime();
+        const oldEndDate = prescription.end_date.getTime();
+        const newStartDate = new Date(start_date).getTime();
+        const newEndDate = new Date(end_date).getTime();
+
+        if (oldStartDate !== newStartDate || oldEndDate !== newEndDate) {
+            // Delete related UserMedicine and UserMedicineLog records
+            await UserMedicine.deleteMany({ prescription_id: prescriptionId });
+            await UserMedicineLog.deleteMany({ prescription_id: prescriptionId });
+        }
+
+        // Update prescription fields
+        prescription.name = name || prescription.name;
+        prescription.hospital = hospital || prescription.hospital;
+        prescription.start_date = start_date || prescription.start_date;
+        prescription.end_date = end_date || prescription.end_date;
+
+        // Save the updated prescription
+        await prescription.save();
+
+        return prescription;
+    } catch (err) {
+        console.error("Failed to update prescription:", err);
+        throw err;
+    }
+};
+
+module.exports = { updatePrescription };
 const getDailyStats = async (userId, date) => {
     try {
         const startDate = new Date(date);
@@ -91,4 +129,4 @@ const getDailyStats = async (userId, date) => {
 }
 
 
-module.exports = { createPrescription, Prescription, getPrescription, getDailyStats };
+module.exports = { createPrescription, Prescription, getPrescription, getDailyStats, updatePrescription };

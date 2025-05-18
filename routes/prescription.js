@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createPrescription, getPrescription } = require("../infra/model/prescription");
+const { createPrescription, getPrescription, updatePrescription } = require("../infra/model/prescription");
 const { createMedicineWithLogs, getUserMedicineByDate, deletePrescription, deleteUserMedicine } = require("../infra/model/medication");
 
 router.post("/", async (req, res) => {
@@ -71,6 +71,12 @@ router.patch("/", async (req, res) => {
         const start = new Date(start_date);
         const end = new Date(end_date);
 
+        await updatePrescription(userId, prescription_id, {
+            name,
+            hospital,
+            start_date: start,
+            end_date: end
+        });
         // 처방전 수정 로직을 여기에 추가합니다.
         // 예를 들어, 처방전의 이름이나 병원 이름을 수정할 수 있습니다.
 
