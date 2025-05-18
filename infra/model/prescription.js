@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const { Schema, model } = mongoose;
-const { UserMedicineLog } = require('./medication');
+const { UserMedicineLog , UserMedicine } = require('./medication');
 
 const PrescriptionSchema = new Schema({
     user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true }, // 사용자 ID

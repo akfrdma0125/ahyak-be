@@ -277,9 +277,6 @@ const getMonthlyMedicineStats = async (userId, month, year) => {
     }
 };
 
-module.exports = { getMonthlyMedicineStats };
 
-
-
-module.exports = {UserMedicineLog, createMedicineWithLogs, getUserMedicineByDate, deletePrescription, deleteUserMedicine, updateTakenStatus, getMonthlyMedicineStats};
+module.exports = {UserMedicineLog, createMedicineWithLogs, getUserMedicineByDate, deletePrescription, deleteUserMedicine, updateTakenStatus, getMonthlyMedicineStats, UserMedicine};
 
