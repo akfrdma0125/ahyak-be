@@ -196,6 +196,90 @@ const updateTakenStatus = async (userId, logId, taken) => {
     }
 }
 
+const getMonthlyMedicineStats = async (userId, month, year) => {
+    try {
+        // 1) 월(month)을 Date 생성자에 넣을 땐 0-based로 바꿔준다
+        const startDate = new Date(year, month - 1, 1, 0, 0 , 0, 0);
 
-module.exports = {UserMedicineLog, createMedicineWithLogs, getUserMedicineByDate, deletePrescription, deleteUserMedicine, updateTakenStatus};
+        // 2) 마지막 날은 day=0 트릭을 그대로 쓰되, month만 1 늘려서
+        const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+        console.log(startDate); // → Fri Feb 01 2025 00:00:00
+        console.log(endDate);   // → Fri Feb 28 2025 23:59:59.999
+
+        // 2. Fetch logs for the given month
+        const logs = await UserMedicineLog.find({
+            user_id: userId,
+            take_date: { $gte: startDate, $lte: endDate },
+        }).populate('medicine_id').lean();
+
+        // 3. Group logs by date and medicine
+        const groupedData = {};
+        for (const log of logs) {
+            const dateKey = log.take_date.toISOString().split('T')[0]; // Format date as YYYY-MM-DD
+            if (!groupedData[dateKey]) {
+                groupedData[dateKey] = {};
+            }
+
+            const medicineKey = log.medicine_id._id.toString();
+            if (!groupedData[dateKey][medicineKey]) {
+                groupedData[dateKey][medicineKey] = {
+                    medicineId: log.medicine_id._id,
+                    medicineName: log.medicine_id.name,
+                    totalLogs: 0,
+                    takenLogs: 0
+                };
+            }
+
+            groupedData[dateKey][medicineKey].totalLogs++;
+            if (log.taken) {
+                groupedData[dateKey][medicineKey].takenLogs++;
+            }
+        }
+
+        // 4. Calculate achievement rates and structure the response
+        const result = [];
+        for (const [date, medicines] of Object.entries(groupedData)) {
+            const dailyDetails = {
+                date,
+                achieved: true,
+                medicines: []
+            };
+
+            for (const [medicineId, data] of Object.entries(medicines)) {
+                const percentage = (data.takenLogs / data.totalLogs) * 100;
+                dailyDetails.medicines.push({
+                    medicineId: data.medicineId,
+                    medicineName: data.medicineName,
+                    percentage: percentage.toFixed(2) // Round to 2 decimal places
+                });
+
+                if (percentage < 100) {
+                    dailyDetails.achieved = false; // Mark as not fully achieved if any medicine is below 100%
+                }
+            }
+
+            result.push(dailyDetails);
+        }
+
+        // 5. Calculate overall monthly achievement rate
+        const totalLogs = logs.length;
+        const takenLogs = logs.filter(log => log.taken).length;
+        const achievementRate = totalLogs > 0 ? (takenLogs / totalLogs) * 100 : 0;
+
+        return {
+            achievementRate: achievementRate.toFixed(2), // Overall monthly achievement rate
+            details: result // Daily details
+        };
+    } catch (err) {
+        console.error("Error fetching monthly medicine stats:", err);
+        throw new Error("Failed to fetch monthly medicine stats.");
+    }
+};
+
+module.exports = { getMonthlyMedicineStats };
+
+
+
+module.exports = {UserMedicineLog, createMedicineWithLogs, getUserMedicineByDate, deletePrescription, deleteUserMedicine, updateTakenStatus, getMonthlyMedicineStats};
 
