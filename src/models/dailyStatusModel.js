@@ -1,7 +1,7 @@
 const createModel = require('../utils/createModels');
 
 const dailyStatusFields = {
-    user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     date: { type: Date, required: true },
     discomforts: [
         {
@@ -12,4 +12,4 @@ const dailyStatusFields = {
     additional_info: String
 }
 
-module.exports = createModel('DailyStatus', dailyStatusFields);
+module.exports = createModel('DailyStatus', dailyStatusFields);ß
