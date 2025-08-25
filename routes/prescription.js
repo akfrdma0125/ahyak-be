@@ -91,12 +91,20 @@ router.post("/medicine", async (req, res) => {
     try {
         const user_id = req.user_id;
         // req.body 에서 필요한 데이터 추출
-        const { medicine_id, prescription_id, medicine_name, dose, unit, frequency, times, start_date } = req.body;
+        const { medicine_id, prescription_id, medicine_name, dose, unit, frequency_type, frequency_interval, frequency_weekdays, frequency_custom, times, start_date } = req.body;
 
         // 만약 데이터가 하나라도 없는 경우 400 에러를 반환합니다.
-        if (!user_id || !medicine_id || !prescription_id || !medicine_name || !dose || !unit || !frequency || !times || !start_date) {
+        if (!user_id || !medicine_id || !prescription_id || !medicine_name || !dose || !unit || !frequency_type || !times || !start_date) {
             res.status(400).json({ message: "Bad Request" });
             return;
+        }
+
+        // frequency_type 별 추가 유효성 검사 (필요 시)
+        if (frequency_type === 'interval' && (typeof frequency_interval !== 'number' || frequency_interval <= 0)) {
+            return res.status(400).json({ message: "interval 타입은 유효한 frequency_interval(양수)이 필요합니다." });
+        }
+        if (frequency_type === 'weekdays' && (!Array.isArray(frequency_weekdays) || frequency_weekdays.length === 0)) {
+            return res.status(400).json({ message: "weekdays 타입은 frequency_weekdays 배열이 필요합니다." });
         }
 
 
@@ -111,7 +119,10 @@ router.post("/medicine", async (req, res) => {
             medicine_name,
             dose,
             unit,
-            frequency,
+            frequency_type,
+            frequency_interval,
+            frequency_weekdays,
+            frequency_custom,
             times,
             start_date
         }, endDate);
