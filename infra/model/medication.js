@@ -14,7 +14,16 @@ const UserMedicineSchema = new Schema({
     dose: String,
     unit: String,
 
-    frequency: Number, // 예: 1 = 매일, 2 = 이틀마다, -1 = 사용자 지정
+    // frequency 관련 필드들
+    frequency_type: { 
+        type: String, 
+        enum: ['interval', 'weekdays', 'custom'], 
+        required: true 
+    },
+    frequency_interval: { type: Number, default: null }, // interval 타입일 때: 1=매일, 2=이틀마다, 3=3일마다
+    frequency_weekdays: [{ type: Number }], // weekdays 타입일 때: [1,3,5] = 월,수,금
+    frequency_custom: { type: String, default: null }, // custom 타입일 때: 사용자 정의 문자열
+    
     times: [String], // 예: ["아침", "점심"]
     start_date: Date,
     isActive: { type: Boolean, default: true }
@@ -40,7 +49,7 @@ const UserMedicineLogSchema = new Schema({
 const UserMedicineLog = model('UserMedicineLog', UserMedicineLogSchema);
 
 const createMedicineWithLogs = async (userMedicineData, endDate) => {
-    const { user_id, medicine_id, prescription_id, medicine_name, dose, unit, frequency, times, start_date } = userMedicineData;
+    const { user_id, medicine_id, prescription_id, medicine_name, dose, unit, frequency_type, frequency_interval, frequency_weekdays, frequency_custom, times, start_date } = userMedicineData;
 
     // 1. UserMedicine 저장
     const newUserMedicine = new UserMedicine(userMedicineData);
@@ -49,35 +58,65 @@ const createMedicineWithLogs = async (userMedicineData, endDate) => {
 
     await newUserMedicine.save();
 
-    if (frequency === -1) return newUserMedicine;
+    // custom 타입이거나 복용 기록이 필요없는 경우
+    if (frequency_type === 'custom') return newUserMedicine;
 
-    // 3. start_date부터 endDate까지 주기(frequency) 간격으로 복용 기록 생성
+    // 2. start_date부터 endDate까지 frequency_type에 따라 복용 기록 생성
     let logs = [];
     let current = new Date(start_date);
     const end = new Date(endDate);
     const timesArray = newUserMedicine.times; // ["아침", "점심", "저녁"] 형태로 가정
 
     while (current <= end) {
-        for (const time of timesArray) {
-            console.log("Current Time:", time);
-            logs.push({
-                user_id,
-                medicine_id,
-                prescription_id,
-                userMedicine_id: newUserMedicine._id,
-                medicine_name,
-                dose,
-                unit,
-                take_date: new Date(current), // 복용 날짜
-                time
-            });
+        let shouldCreateLogs = false;
+
+        // frequency_type에 따른 날짜 체크
+        switch (frequency_type) {
+            case 'interval':
+                // interval 타입: 매일, 이틀마다 등
+                shouldCreateLogs = true;
+                break;
+            
+            case 'weekdays':
+                // weekdays 타입: 특정 요일만
+                const dayOfWeek = current.getDay(); // 0=일요일, 1=월요일, ..., 6=토요일
+                shouldCreateLogs = frequency_weekdays.includes(dayOfWeek);
+                break;
         }
-        // 주기(frequency)만큼 날짜를 증가시킴
-        current = new Date(current.getTime() + frequency * 86400000);
+
+        if (shouldCreateLogs) {
+            for (const time of timesArray) {
+                console.log("Current Time:", time);
+                logs.push({
+                    user_id,
+                    medicine_id,
+                    prescription_id,
+                    userMedicine_id: newUserMedicine._id,
+                    medicine_name,
+                    dose,
+                    unit,
+                    take_date: new Date(current), // 복용 날짜
+                    time
+                });
+            }
+        }
+
+        // 다음 날짜로 이동
+        if (frequency_type === 'interval') {
+            // interval 타입: frequency_interval만큼 증가
+            current = new Date(current.getTime() + frequency_interval * 86400000);
+        } else {
+            // weekdays 타입: 하루씩 증가
+            current.setDate(current.getDate() + 1);
+        }
+        
         console.log("Current Date:", current);
     }
 
-    await UserMedicineLog.insertMany(logs);
+    if (logs.length > 0) {
+        await UserMedicineLog.insertMany(logs);
+    }
+    
     return newUserMedicine; // 저장된 UserMedicine 반환
 };
 
@@ -311,41 +350,68 @@ async function updateUserMedicine(userMedicineId, updatedData, actionType, presc
 
     const endDate = prescription.end_date;
     const startDate = updatedMedicine.start_date;
-    const frequency = updatedMedicine.frequency;
+    const frequency_type = updatedMedicine.frequency_type;
+    const frequency_interval = updatedMedicine.frequency_interval;
+    const frequency_weekdays = updatedMedicine.frequency_weekdays;
     const times = updatedMedicine.times;
 
-    if (frequency === -1) return updatedMedicine;
+    if (frequency_type === 'custom') return updatedMedicine;
 
     const newLogs = [];
 
     let date = new Date(startDate);
 
     while (date <= endDate) {
-        for (const time of times) {
-            // 기존 기록 유지 옵션이면 중복 제외
-            const exists = await UserMedicineLog.findOne({
-                userMedicine_id: userMedicineId,
-                take_date: date,
-                time,
-            });
+        let shouldCreateLogs = false;
 
-            if (actionType === 'keep_existing' && exists) continue;
-
-            newLogs.push({
-                user_id: updatedMedicine.user_id,
-                medicine_id: updatedMedicine.medicine_id,
-                prescription_id: updatedMedicine.prescription_id,
-                userMedicine_id: updatedMedicine._id,
-                medicine_name: updatedMedicine.medicine_name,
-                dose: updatedMedicine.dose,
-                unit: updatedMedicine.unit,
-                take_date: new Date(date),
-                time,
-                taken: false,
-            });
+        // frequency_type에 따른 날짜 체크
+        switch (frequency_type) {
+            case 'interval':
+                // interval 타입: 매일, 이틀마다 등
+                shouldCreateLogs = true;
+                break;
+            
+            case 'weekdays':
+                // weekdays 타입: 특정 요일만
+                const dayOfWeek = date.getDay(); // 0=일요일, 1=월요일, ..., 6=토요일
+                shouldCreateLogs = frequency_weekdays.includes(dayOfWeek);
+                break;
         }
 
-        date.setDate(date.getDate() + frequency);
+        if (shouldCreateLogs) {
+            for (const time of times) {
+                // 기존 기록 유지 옵션이면 중복 제외
+                const exists = await UserMedicineLog.findOne({
+                    userMedicine_id: userMedicineId,
+                    take_date: date,
+                    time,
+                });
+
+                if (actionType === 'keep_existing' && exists) continue;
+
+                newLogs.push({
+                    user_id: updatedMedicine.user_id,
+                    medicine_id: updatedMedicine.medicine_id,
+                    prescription_id: updatedMedicine.prescription_id,
+                    userMedicine_id: updatedMedicine._id,
+                    medicine_name: updatedMedicine.medicine_name,
+                    dose: updatedMedicine.dose,
+                    unit: updatedMedicine.unit,
+                    take_date: new Date(date),
+                    time,
+                    taken: false,
+                });
+            }
+        }
+
+        // 다음 날짜로 이동
+        if (frequency_type === 'interval') {
+            // interval 타입: frequency_interval만큼 증가
+            date.setDate(date.getDate() + frequency_interval);
+        } else {
+            // weekdays 타입: 하루씩 증가
+            date.setDate(date.getDate() + 1);
+        }
     }
 
     if (newLogs.length > 0) {

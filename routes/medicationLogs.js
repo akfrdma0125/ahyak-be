@@ -46,7 +46,10 @@ router.put("/", async (req, res) => {
             medicine_name,
             dose,
             unit,
-            frequency,
+            frequency_type,
+            frequency_interval,
+            frequency_weekdays,
+            frequency_custom,
             times,
             actionType,
         } = req.body;
@@ -62,7 +65,10 @@ router.put("/", async (req, res) => {
             medicine_name,
             dose,
             unit,
-            frequency,
+            frequency_type,
+            frequency_interval,
+            frequency_weekdays,
+            frequency_custom,
             times,
         }, actionType, prescription);
         return res.status(200).json({ message: "복용 여부 업데이트 성공" });
