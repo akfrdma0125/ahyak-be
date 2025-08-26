@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const { Schema, model } = mongoose;
-const url = process.env.DB_URL;
+const url = process.env.MONGODB_URI;
 
 // ✅ User 스키마 정의
 const UserSchema = new Schema({
