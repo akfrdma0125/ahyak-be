@@ -6,6 +6,7 @@ const REFRESH_SECRET_KEY = process.env.REFRESH_SECRET_KEY;
 
 // 인증이 필요 없는 경로들 (화이트리스트 방식)
 const PUBLIC_PATHS = [
+    '/auth/signup',
     '/auth/login',
     '/auth/register',
     '/auth/withdraw'
