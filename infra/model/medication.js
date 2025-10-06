@@ -146,6 +146,7 @@ const getUserMedicineByDate = async (user_id, date) => {
                grouped[key] = {
                    prescriptionId: prescription._id,
                    symptomName: prescription.name, // 증상 이름
+                   hospital: prescription.hospital,
                    startDate: prescription.start_date,
                    medicines: {} // 약 정보를 그룹화할 객체 추가
                };
